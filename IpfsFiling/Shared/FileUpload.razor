@@ -1,0 +1,115 @@
+﻿@using IpfsModule
+
+@inject IpfsFilingService Ipfs;
+
+<style type="text/css">
+    .spinner {
+        border: 16px solid silver;
+        border-top: 16px solid #337ab7;
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+        animation: spin 700ms linear infinite;
+        top: 40%;
+        left: 55%;
+        position: absolute;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg)
+        }
+
+        100% {
+            transform: rotate(360deg)
+        }
+    }
+</style>
+
+
+@if (IsBusy)
+{
+    <div class="spinner"></div>
+
+}
+
+<div class="alert alert-secondary mt-4" role="alert" style="padding-bottom: 50px">
+    <h3><strong>Please choose the file you want to upload:</strong></h3>
+    <hr />
+    <div>
+        <InputFile OnChange="OnInputFileChange"></InputFile>
+
+        <button class="btn btn-primary" style="float: right" @onclick="UploadFile">
+            Upload File
+        </button>
+    </div>
+    <hr/>
+    <span class="text-danger"><small>@ValidationText</small></span>
+</div>
+
+
+@if (!string.IsNullOrEmpty(Result))
+{
+    <div class="alert alert-secondary mt-4" role="alert">
+        <h4>Your upload was successful</h4>
+        <hr />
+        <strong>The IPFS ID (cid) : @Result</strong>
+    </div>
+}
+
+
+@code {
+
+    /// <summary>
+    /// Flag to indicate if page is processing an upload
+    /// </summary>
+    private bool IsBusy { get; set; }
+
+    /// <summary>
+    /// Gets or Sets any Validation Errors
+    /// </summary>
+    private string ValidationText { get; set; }
+
+    /// <summary>
+    /// The selected file to upload
+    /// </summary>
+    IBrowserFile selectedFile;
+
+    /// <summary>
+    /// The result of the upload
+    /// </summary>
+    public string Result { get; set; }
+
+    /// <summary>
+    /// Uploads the file to IPFS
+    /// </summary>
+    /// <returns></returns>
+    public async Task UploadFile()
+    {
+        if (selectedFile != null)
+        {
+            IsBusy = true;
+            await Task.Delay(1);
+
+            var file = await Ipfs.UploadFile(selectedFile.OpenReadStream(), selectedFile.Name);
+            Result = file.Id;
+
+            IsBusy = false;
+            await Task.Delay(1);
+        }
+        else
+        {
+            ValidationText = "Please select a file first";
+        }
+    }
+
+    /// <summary>
+    /// When the file input changes this method executes
+    /// </summary>
+    /// <param name="e">The file changed event arguments</param>
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        ValidationText = null;
+    }
+}
